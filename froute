@@ -1,0 +1,79 @@
+#!/bin/bash
+case $1 in
+  a|add|r|replace)
+    op=replace
+    ;;
+  d|del)
+    op=del
+    ;;
+  *)
+    ip route
+    exit
+    ;;
+esac
+
+target=$2
+gw=$3
+
+chnroute () {
+  if [[ "$op" == "replace" ]]
+  then
+    sudo /usr/lib/froute/chnroutes/ip-pre-up $gw
+  else
+    sudo /usr/lib/froute/chnroutes/ip-down $gw
+  fi
+}
+
+isproute () {
+  cd /usr/lib/froute/isp/
+  if [[ ! -z "$gw" ]]; then
+    gw="via $gw"
+  fi
+  cat $@ | sed -e "s/\(.*\)/route $op \1 $gw/" | sudo ip -batch -
+}
+
+case $target in
+  c|cn)
+    chnroute
+    ;;
+  t|telecom|chinanet)
+    isproute chinanet-transit
+    ;;
+  nt|notelecom)
+    isproute unicom-transit cernet-transit gwbn-transit
+    ;;
+  u|unicom|cnc)
+    isproute unicom-transit
+    ;;
+  nu|nounicom)
+    isproute chinanet-transit
+    ;;
+  cernet)
+    isproute cernet-transit
+    ;;
+  nc|nocernet)
+    isproute chinanet-transit
+    ;;
+  d|default)
+    if [[ ! -z "$gw" ]]; then
+      gw="via $gw"
+    fi
+    sudo ip route $op default $gw
+    ;;
+  *)
+    if [[ -z $target ]]; then
+      echo "Usage: froute <add|del> <rule|custom_target> [gateway]"
+      echo "Available rules: cn telecom notelecom unicom nounicom cernet nocernet default"
+    else
+      if [[ ! -z "$gw" ]]; then
+        gw="via $gw"
+      fi
+      if [[ "$target" == v* ]]; then
+        target=$(dig +short $target.felix.shit.la)
+      fi
+      sudo ip route $op $target $gw
+    fi
+    ;;
+esac
+
+# vim:set ts=2 sw=2 et:

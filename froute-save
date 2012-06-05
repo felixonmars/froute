@@ -1,0 +1,14 @@
+#!/bin/bash
+interface=${interface:-$1}
+gateway=${new_routers:-$5}
+
+if [ "$reason" = 'BOUND' ] && ! ([ -z "$interface" ] || [ -z "$gateway" ])
+then
+    mkdir -p /tmp/froute/
+    chmod 755 /tmp/froute
+    echo $gateway > /tmp/froute/$interface
+    chmod 644 /tmp/froute/$interface
+elif ([ "$reason" = 'STOP' ] || [ "$reason" = 'RELEASE' ]) && ! [ -z "$interface" ]
+then
+    rm -f /tmp/froute/$interface
+fi
